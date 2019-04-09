@@ -17,7 +17,13 @@
 import * as pitometer from 'pitometer';
 
 export class Grader implements pitometer.IGrader {
-  grade(id: string, value: number | boolean, { thresholds, metricScore }, context)
+  private context: string;
+
+  public setOptions(options: pitometer.IOptions) {
+    this.context = options.context;
+  }
+
+  grade(id: string, value: number | boolean, { thresholds, metricScore })
     : pitometer.IGradingResult {
     if (value === false) {
       return {

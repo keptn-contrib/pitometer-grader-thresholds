@@ -16,7 +16,10 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 class Grader {
-    grade(id, value, { thresholds, metricScore }, context) {
+    setOptions(options) {
+        this.context = options.context;
+    }
+    grade(id, value, { thresholds, metricScore }) {
         if (value === false) {
             return {
                 id,
