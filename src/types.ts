@@ -1,3 +1,5 @@
+import { IViolation } from "pitometer/dist/types";
+
 /**
  * Copyright 2019, Dynatrace
  *
@@ -13,5 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export { Grader } from './classes/Grader';
-export {} from './types';
+
+export interface IThresholdViolation extends IViolation {
+  threshold: string;
+}

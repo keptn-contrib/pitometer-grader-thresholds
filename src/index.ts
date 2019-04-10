@@ -15,3 +15,4 @@
  */
 
 export { Grader } from './classes/Grader';
+export {  } from './types';

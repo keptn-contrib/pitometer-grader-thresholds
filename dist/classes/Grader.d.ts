@@ -18,8 +18,9 @@ export declare class Grader implements pitometer.IGrader {
     private context;
     setOptions(options: pitometer.IOptions): void;
     private evaluate;
-    grade(id: string, results: pitometer.ISourceResult[], { thresholds, metricScore }: {
+    grade(id: string, results: pitometer.ISourceResult[], { thresholds, metricScore, ignoreEmpty }: {
         thresholds: any;
         metricScore: any;
+        ignoreEmpty: any;
     }): pitometer.IGradingResult;
 }
