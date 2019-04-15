@@ -15,57 +15,113 @@
  */
 
 import * as pitometer from 'pitometer';
+import { IViolation } from 'pitometer/dist/types';
+import { IThresholdViolation } from '../types';
 
 export class Grader implements pitometer.IGrader {
-  grade(id: string, value: number | boolean, { thresholds, metricScore }, context)
-    : pitometer.IGradingResult {
-    if (value === false) {
+  private context: string;
+
+  public setOptions(options: pitometer.IOptions) {
+    this.context = options.context;
+  }
+
+  private evaluate(
+    result: boolean | pitometer.ISourceResult,
+    { thresholds, metricScore, ignoreEmpty }) {
+
+    if ((typeof (result) === 'boolean') || !result.value) {
+      if (ignoreEmpty) {
+        return false;
+      }
       return {
-        id,
-        value,
         score: 0,
         violations: [
-          { breach: 'The indicator returned no value' },
+          {
+            key: typeof (result) === 'boolean' ? '' : result.key,
+            value: false,
+            breach: 'The indicator returned no value for the current key',
+          },
         ],
       };
     }
 
     let score = metricScore;
-    // const query = source.query;
-    const violations = [];
+    const violations: IThresholdViolation[] = [];
+    const value = result.value;
 
     if (thresholds.lowerSevere && value <= thresholds.lowerSevere) {
       score = 0;
       violations.push({
+        value,
+        key: result.key,
         breach: 'lower_critical',
-        comparison: 'fixed',
         threshold: thresholds.lowerSevere,
       });
     } else if (thresholds.lowerWarning && value <= thresholds.lowerWarning) {
       score /= 2;
       violations.push({
+        value,
+        key: result.key,
         breach: 'lower_warning',
-        comparison: 'fixed',
         threshold: thresholds.lowerWarning,
       });
     }
 
     if (thresholds.upperSevere && value >= thresholds.upperSevere) {
       score = 0;
-      violations.push(violations.push({
+      violations.push({
+        value,
+        key: result.key,
         breach: 'upper_critical',
-        comparison: 'fixed',
         threshold: thresholds.upperSevere,
-      }));
+      });
     } else if (thresholds.upperWarning && value >= thresholds.upperWarning) {
       score /= 2;
-      violations.push(violations.push({
+      violations.push({
+        value,
+        key: result.key,
         breach: 'upper_warning',
-        comparison: 'fixed',
         threshold: thresholds.upperWarning,
-      }));
+      });
     }
 
-    return { id, value, score, violations };
+    return {
+      score,
+      violations,
+    };
+  }
+
+  grade(id: string, results: pitometer.ISourceResult[], { thresholds, metricScore, ignoreEmpty })
+    : pitometer.IGradingResult {
+
+    if (!results) {
+      return {
+        id,
+        score: 0,
+        violations: [{ breach: 'The indicator returned no values' }],
+      };
+    }
+
+    const grades = [];
+    const violations = [];
+    results.forEach((result: pitometer.ISourceResult) => {
+      const grade = this.evaluate(result, { thresholds, metricScore, ignoreEmpty });
+      if (grade === false) return false;
+      violations.push(...grade.violations);
+      grades.push({
+        id,
+        key: result.key,
+        value: result.value,
+        score: grade.score,
+        violations: grade.violations,
+      });
+    });
+
+    const reduced = grades.reduce((acc, elm) => {
+      return (!acc || elm.score < acc.score) ? elm : acc;
+      return acc;
+    }, null);
+
+    return { id, violations, score: reduced && reduced.score ? reduced.score : metricScore };
   }
 }
