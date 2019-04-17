@@ -54,7 +54,7 @@ export class Grader implements pitometer.IGrader {
       violations.push({
         value,
         key: result.key,
-        breach: 'lower_critical',
+        breach: 'lowerSevere',
         threshold: thresholds.lowerSevere,
       });
     } else if (thresholds.lowerWarning && value <= thresholds.lowerWarning) {
@@ -62,7 +62,7 @@ export class Grader implements pitometer.IGrader {
       violations.push({
         value,
         key: result.key,
-        breach: 'lower_warning',
+        breach: 'lowerWarning',
         threshold: thresholds.lowerWarning,
       });
     }
@@ -72,7 +72,7 @@ export class Grader implements pitometer.IGrader {
       violations.push({
         value,
         key: result.key,
-        breach: 'upper_critical',
+        breach: 'upperSevere',
         threshold: thresholds.upperSevere,
       });
     } else if (thresholds.upperWarning && value >= thresholds.upperWarning) {
@@ -80,7 +80,7 @@ export class Grader implements pitometer.IGrader {
       violations.push({
         value,
         key: result.key,
-        breach: 'upper_warning',
+        breach: 'upperSevere',
         threshold: thresholds.upperWarning,
       });
     }
@@ -122,6 +122,6 @@ export class Grader implements pitometer.IGrader {
       return acc;
     }, null);
 
-    return { id, violations, score: reduced && reduced.score ? reduced.score : metricScore };
+    return { id, violations, score: reduced ? reduced.score : metricScore };
   }
 }

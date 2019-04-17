@@ -43,7 +43,7 @@ class Grader {
             violations.push({
                 value,
                 key: result.key,
-                breach: 'lower_critical',
+                breach: 'lowerSevere',
                 threshold: thresholds.lowerSevere,
             });
         }
@@ -52,7 +52,7 @@ class Grader {
             violations.push({
                 value,
                 key: result.key,
-                breach: 'lower_warning',
+                breach: 'lowerWarning',
                 threshold: thresholds.lowerWarning,
             });
         }
@@ -61,7 +61,7 @@ class Grader {
             violations.push({
                 value,
                 key: result.key,
-                breach: 'upper_critical',
+                breach: 'upperSevere',
                 threshold: thresholds.upperSevere,
             });
         }
@@ -70,7 +70,7 @@ class Grader {
             violations.push({
                 value,
                 key: result.key,
-                breach: 'upper_warning',
+                breach: 'upperSevere',
                 threshold: thresholds.upperWarning,
             });
         }
@@ -106,7 +106,7 @@ class Grader {
             return (!acc || elm.score < acc.score) ? elm : acc;
             return acc;
         }, null);
-        return { id, violations, score: reduced && reduced.score ? reduced.score : metricScore };
+        return { id, violations, score: reduced ? reduced.score : metricScore };
     }
 }
 exports.Grader = Grader;
