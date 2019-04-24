@@ -80,7 +80,7 @@ export class Grader implements pitometer.IGrader {
       violations.push({
         value,
         key: result.key,
-        breach: 'upperSevere',
+        breach: 'upperWarning',
         threshold: thresholds.upperWarning,
       });
     }
