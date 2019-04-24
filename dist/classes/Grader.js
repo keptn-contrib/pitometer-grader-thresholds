@@ -70,7 +70,7 @@ class Grader {
             violations.push({
                 value,
                 key: result.key,
-                breach: 'upperSevere',
+                breach: 'upperWarning',
                 threshold: thresholds.upperWarning,
             });
         }
