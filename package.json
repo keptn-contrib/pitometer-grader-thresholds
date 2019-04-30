@@ -1,11 +1,11 @@
 {
-  "name": "@pitometer/grader-threshold",
-  "version": "0.0.2",
+  "name": "@keptn/grader-threshold",
+  "version": "1.0.0",
   "description": "",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "release": "release-it",
+    "build": "npx tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -14,7 +14,6 @@
   "devDependencies": {
     "@types/node": "^11.13.2",
     "pitometer": "file:../pitometer",
-    "release-it": "^10.4.5",
     "tslint": "^5.15.0",
     "tslint-config-airbnb": "^5.11.1",
     "typescript": "^3.4.2"
