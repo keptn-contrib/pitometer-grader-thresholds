@@ -1,21 +1,49 @@
 {
   "name": "@keptn/pitometer-grader-threshold",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "npx tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Testing...\" && nyc --reporter=text nyc mocha && nyc report"
   },
   "keywords": [],
   "author": "",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/mocha": "^5.2.6",
     "@types/node": "^11.13.2",
+    "chai": "^4.2.0",
+    "mocha": "^6.1.4",
+    "nyc": "^14.1.1",
     "pitometer": "file:../pitometer",
+    "source-map-support": "^0.5.12",
+    "ts-node": "^8.1.0",
     "tslint": "^5.15.0",
     "tslint-config-airbnb": "^5.11.1",
     "typescript": "^3.4.2"
+  },
+  "nyc": {
+    "include": [
+      "src/**/*.ts"
+    ],
+    "exclude": [
+      "src/server.ts",
+      "src/**/*.spec.ts"
+    ],
+    "extension": [
+      ".ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ],
+    "reporter": [
+      "html",
+      "cobertura"
+    ],
+    "sourceMap": true,
+    "instrument": true
   }
 }
