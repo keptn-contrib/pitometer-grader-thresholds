@@ -31,7 +31,7 @@ export class Grader implements pitometer.IGrader {
 
   private evaluate(
     result: pitometer.ISourceResult,
-    { thresholds, metricScore, ignoreEmpty }) {
+    { thresholds, metricScore, ignoreEmpty, metadata }) {
     let score = metricScore;
     const violations: IThresholdViolation[] = [];
     const value = result.value;
@@ -39,6 +39,7 @@ export class Grader implements pitometer.IGrader {
     if (thresholds.lowerSevere && value <= thresholds.lowerSevere) {
       score = 0;
       violations.push({
+        metadata,
         value,
         key: result.key,
         breach: 'lowerSevere',
@@ -47,6 +48,7 @@ export class Grader implements pitometer.IGrader {
     } else if (thresholds.lowerWarning && value <= thresholds.lowerWarning) {
       score /= 2;
       violations.push({
+        metadata,
         value,
         key: result.key,
         breach: 'lowerWarning',
@@ -57,6 +59,7 @@ export class Grader implements pitometer.IGrader {
     if (thresholds.upperSevere && value >= thresholds.upperSevere) {
       score = 0;
       violations.push({
+        metadata,
         value,
         key: result.key,
         breach: 'upperSevere',
@@ -65,6 +68,7 @@ export class Grader implements pitometer.IGrader {
     } else if (thresholds.upperWarning && value >= thresholds.upperWarning) {
       score /= 2;
       violations.push({
+        metadata,
         value,
         key: result.key,
         breach: 'upperWarning',
@@ -78,13 +82,22 @@ export class Grader implements pitometer.IGrader {
     };
   }
 
-  grade(id: string, results: pitometer.ISourceResult[], { thresholds, metricScore, ignoreEmpty })
-    : pitometer.IGradingResult {
+  grade(id: string, results: pitometer.ISourceResult[], {
+    thresholds,
+    metricScore,
+    ignoreEmpty,
+    metadata,
+  }): pitometer.IGradingResult {
     const grades = [];
     const violations = [];
 
     results.forEach((result: pitometer.ISourceResult) => {
-      const grade = this.evaluate(result, { thresholds, metricScore, ignoreEmpty });
+      const grade = this.evaluate(result, {
+        thresholds,
+        metricScore,
+        ignoreEmpty,
+        metadata,
+      });
       violations.push(...grade.violations);
       grades.push({
         id,
@@ -107,6 +120,7 @@ export class Grader implements pitometer.IGrader {
       score = metricScore;
     } else {
       violations.push({
+        metadata,
         breach: 'The indicator returned no values',
       });
     }
