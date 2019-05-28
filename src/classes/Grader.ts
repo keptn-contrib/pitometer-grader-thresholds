@@ -25,26 +25,13 @@ export class Grader implements pitometer.IGrader {
     this.context = options.context;
   }
 
+  public getContext() {
+    return this.context;
+  }
+
   private evaluate(
-    result: boolean | pitometer.ISourceResult,
+    result: pitometer.ISourceResult,
     { thresholds, metricScore, ignoreEmpty }) {
-
-    if ((typeof (result) === 'boolean') || !result.value) {
-      if (ignoreEmpty) {
-        return false;
-      }
-      return {
-        score: 0,
-        violations: [
-          {
-            key: typeof (result) === 'boolean' ? '' : result.key,
-            value: false,
-            breach: 'The indicator returned no value for the current key',
-          },
-        ],
-      };
-    }
-
     let score = metricScore;
     const violations: IThresholdViolation[] = [];
     const value = result.value;
@@ -93,20 +80,11 @@ export class Grader implements pitometer.IGrader {
 
   grade(id: string, results: pitometer.ISourceResult[], { thresholds, metricScore, ignoreEmpty })
     : pitometer.IGradingResult {
-
-    if (!results) {
-      return {
-        id,
-        score: 0,
-        violations: [{ breach: 'The indicator returned no values' }],
-      };
-    }
-
     const grades = [];
     const violations = [];
+
     results.forEach((result: pitometer.ISourceResult) => {
       const grade = this.evaluate(result, { thresholds, metricScore, ignoreEmpty });
-      if (grade === false) return false;
       violations.push(...grade.violations);
       grades.push({
         id,
@@ -119,9 +97,20 @@ export class Grader implements pitometer.IGrader {
 
     const reduced = grades.reduce((acc, elm) => {
       return (!acc || elm.score < acc.score) ? elm : acc;
-      return acc;
+      // tslint:disable-next-line: align
     }, null);
 
-    return { id, violations, score: reduced ? reduced.score : metricScore };
+    let score = 0;
+    if (reduced) {
+      score = reduced.score;
+    } else if (ignoreEmpty) {
+      score = metricScore;
+    } else {
+      violations.push({
+        breach: 'The indicator returned no values',
+      });
+    }
+
+    return { id, violations, score };
   }
 }
