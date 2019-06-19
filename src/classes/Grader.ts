@@ -16,13 +16,16 @@
 
 import * as pitometer from 'pitometer';
 import { IViolation } from 'pitometer/dist/types';
+import { IIndividualGradingResult } from 'pitometer/dist/types';
 import { IThresholdViolation } from '../types';
 
 export class Grader implements pitometer.IGrader {
   private context: string;
+  private individualResults: boolean;
 
   public setOptions(options: pitometer.IOptions) {
     this.context = options.context;
+    this.individualResults = options.individualResults ? options.individualResults : false;
   }
 
   public getContext() {
@@ -34,51 +37,60 @@ export class Grader implements pitometer.IGrader {
     { thresholds, metricScore, ignoreEmpty, metadata }) {
     let score = metricScore;
     const violations: IThresholdViolation[] = [];
-    const value = result.value;
+    const individualResult:IIndividualGradingResult = {value:result.value, key:result.key}
 
-    if (thresholds.lowerSevere && value <= thresholds.lowerSevere) {
+    if (thresholds.lowerSevere && individualResult.value <= thresholds.lowerSevere) {
       score = 0;
       violations.push({
         metadata,
-        value,
-        key: result.key,
+        value: individualResult.value,
+        key: individualResult.key,
         breach: 'lowerSevere',
         threshold: thresholds.lowerSevere,
       });
-    } else if (thresholds.lowerWarning && value <= thresholds.lowerWarning) {
+    } else if (thresholds.lowerWarning && individualResult.value <= thresholds.lowerWarning) {
       score /= 2;
       violations.push({
         metadata,
-        value,
-        key: result.key,
+        value: individualResult.value,
+        key: individualResult.key,
         breach: 'lowerWarning',
         threshold: thresholds.lowerWarning,
       });
     }
 
-    if (thresholds.upperSevere && value >= thresholds.upperSevere) {
+    if (thresholds.upperSevere && individualResult.value >= thresholds.upperSevere) {
       score = 0;
       violations.push({
         metadata,
-        value,
-        key: result.key,
+        value: individualResult.value,
+        key: individualResult.key,
         breach: 'upperSevere',
         threshold: thresholds.upperSevere,
       });
-    } else if (thresholds.upperWarning && value >= thresholds.upperWarning) {
+    } else if (thresholds.upperWarning && individualResult.value >= thresholds.upperWarning) {
       score /= 2;
       violations.push({
         metadata,
-        value,
-        key: result.key,
+        value: individualResult.value,
+        key: individualResult.key,
         breach: 'upperWarning',
         threshold: thresholds.upperWarning,
       });
     }
 
+    if(this.individualResults) {
+      if(thresholds.lowerSevere) individualResult.lowerSevere = thresholds.lowerSevere;
+      if(thresholds.lowerWarning) individualResult.lowerWarning = thresholds.lowerWarning;
+      if(thresholds.upperSevere) individualResult.upperSevere = thresholds.upperSevere;
+      if(thresholds.upperWarning) individualResult.upperWarning = thresholds.upperWarning;
+
+      return {score, violations, individualResult};
+    }
+
     return {
       score,
-      violations,
+      violations
     };
   }
 
@@ -90,6 +102,7 @@ export class Grader implements pitometer.IGrader {
   }): pitometer.IGradingResult {
     const grades = [];
     const violations = [];
+    const individualResults = []
 
     results.forEach((result: pitometer.ISourceResult) => {
       const grade = this.evaluate(result, {
@@ -106,6 +119,8 @@ export class Grader implements pitometer.IGrader {
         score: grade.score,
         violations: grade.violations,
       });
+      if(this.individualResults)
+        individualResults.push(grade.individualResult);
     });
 
     const reduced = grades.reduce((acc, elm) => {
@@ -125,6 +140,9 @@ export class Grader implements pitometer.IGrader {
       });
     }
 
-    return { id, violations, score };
+    if(this.individualResults)
+      return { id, violations, score, individualResults };
+
+    return { id, violations, score};
   }
 }
