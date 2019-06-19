@@ -34,10 +34,25 @@ export class Grader implements pitometer.IGrader {
 
   private evaluate(
     result: pitometer.ISourceResult,
-    { thresholds, metricScore, ignoreEmpty, metadata }) {
+    { thresholds, metricScore, ignoreEmpty, metadata },
+    individualCompareResult: pitometer.IIndividualGradingResult) {
     let score = metricScore;
     const violations: IThresholdViolation[] = [];
     const individualResult:IIndividualGradingResult = {value:result.value, key:result.key}
+
+    // lets see if we have been passed an individual grading result
+    if(individualCompareResult) {
+      // console.log("we have something to compare: " + JSON.stringify(individualCompareResult));
+
+      // If we have a comparison dataset the Threshold Grader support specifying upperSeverePerc, upperWarningPerc, lowerWarningPerc, lowerSeverePerc
+      // if those are specified we calculate them based on the previous run data
+      if(thresholds.upperSeverePerc) thresholds.upperSevere = individualCompareResult.value * (100+thresholds.upperSeverePerc) / 100;
+      if(thresholds.upperWarningPerc) thresholds.upperWarning = individualCompareResult.value * (100+thresholds.upperWarningPerc) / 100;
+      if(thresholds.lowerWarningPerc) thresholds.lowerWarning = individualCompareResult.value * (100-thresholds.lowerWarningPerc) / 100;
+      if(thresholds.lowerSeverePerc) thresholds.lowerSevere = individualCompareResult.value * (100-thresholds.lowerSeverePerc) / 100;
+
+      console.log("Actual Thresholds: " + JSON.stringify(thresholds));
+    }
 
     if (thresholds.lowerSevere && individualResult.value <= thresholds.lowerSevere) {
       score = 0;
@@ -99,18 +114,29 @@ export class Grader implements pitometer.IGrader {
     metricScore,
     ignoreEmpty,
     metadata,
-  }): pitometer.IGradingResult {
+  }, compareResult): pitometer.IGradingResult {
     const grades = [];
     const violations = [];
     const individualResults = []
 
     results.forEach((result: pitometer.ISourceResult) => {
+
+      // lets see if we have an individual compare result for that source key
+      var individualResult:pitometer.IIndividualGradingResult = null;
+      if(compareResult && compareResult.individualResults) {
+        for(var i=0;i<compareResult.individualResults.length;i++) {
+          if(compareResult.individualResults[i].key == result.key)
+            individualResult = compareResult.individualResults[i];
+            break;
+        }
+      }
+
       const grade = this.evaluate(result, {
         thresholds,
         metricScore,
         ignoreEmpty,
         metadata,
-      });
+      }, individualResult);
       violations.push(...grade.violations);
       grades.push({
         id,
