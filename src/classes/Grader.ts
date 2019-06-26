@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-import * as pitometer from 'pitometer';
-import { IViolation } from 'pitometer/dist/types';
-import { IIndividualGradingResult } from 'pitometer/dist/types';
+import * as pitometer from '../../../pitometer';
+import { IIndividualGradingResult } from '../../../pitometer/dist/types';
 import { IThresholdViolation } from '../types';
 
 export class Grader implements pitometer.IGrader {
