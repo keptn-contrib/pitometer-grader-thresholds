@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-import * as pitometer from 'pitometer';
-import { IViolation } from 'pitometer/dist/types';
+import * as pitometer from '../../../pitometer';
+import { IIndividualGradingResult } from '../../../pitometer/dist/types';
 import { IThresholdViolation } from '../types';
 
 export class Grader implements pitometer.IGrader {
   private context: string;
+  private individualResults: boolean;
 
   public setOptions(options: pitometer.IOptions) {
     this.context = options.context;
+    this.individualResults = options.individualResults ? options.individualResults : false;
   }
 
   public getContext() {
@@ -31,54 +33,78 @@ export class Grader implements pitometer.IGrader {
 
   private evaluate(
     result: pitometer.ISourceResult,
-    { thresholds, metricScore, ignoreEmpty, metadata }) {
+    { thresholds, metricScore, ignoreEmpty, metadata },
+    individualCompareResult: pitometer.IIndividualGradingResult) {
     let score = metricScore;
     const violations: IThresholdViolation[] = [];
-    const value = result.value;
+    const individualResult:IIndividualGradingResult = {value:result.value, key:result.key}
 
-    if (thresholds.lowerSevere && value <= thresholds.lowerSevere) {
+    // lets see if we have been passed an individual grading result
+    if(individualCompareResult) {
+      // console.log("we have something to compare: " + JSON.stringify(individualCompareResult));
+
+      // If we have a comparison dataset the Threshold Grader support specifying upperSeverePerc, upperWarningPerc, lowerWarningPerc, lowerSeverePerc
+      // if those are specified we calculate them based on the previous run data
+      if(thresholds.upperSeverePerc) thresholds.upperSevere = individualCompareResult.value * (100+thresholds.upperSeverePerc) / 100;
+      if(thresholds.upperWarningPerc) thresholds.upperWarning = individualCompareResult.value * (100+thresholds.upperWarningPerc) / 100;
+      if(thresholds.lowerWarningPerc) thresholds.lowerWarning = individualCompareResult.value * (100-thresholds.lowerWarningPerc) / 100;
+      if(thresholds.lowerSeverePerc) thresholds.lowerSevere = individualCompareResult.value * (100-thresholds.lowerSeverePerc) / 100;
+
+      console.log("Actual Thresholds: " + JSON.stringify(thresholds));
+    }
+
+    if (thresholds.lowerSevere && individualResult.value <= thresholds.lowerSevere) {
       score = 0;
       violations.push({
         metadata,
-        value,
-        key: result.key,
+        value: individualResult.value,
+        key: individualResult.key,
         breach: 'lowerSevere',
         threshold: thresholds.lowerSevere,
       });
-    } else if (thresholds.lowerWarning && value <= thresholds.lowerWarning) {
+    } else if (thresholds.lowerWarning && individualResult.value <= thresholds.lowerWarning) {
       score /= 2;
       violations.push({
         metadata,
-        value,
-        key: result.key,
+        value: individualResult.value,
+        key: individualResult.key,
         breach: 'lowerWarning',
         threshold: thresholds.lowerWarning,
       });
     }
 
-    if (thresholds.upperSevere && value >= thresholds.upperSevere) {
+    if (thresholds.upperSevere && individualResult.value >= thresholds.upperSevere) {
       score = 0;
       violations.push({
         metadata,
-        value,
-        key: result.key,
+        value: individualResult.value,
+        key: individualResult.key,
         breach: 'upperSevere',
         threshold: thresholds.upperSevere,
       });
-    } else if (thresholds.upperWarning && value >= thresholds.upperWarning) {
+    } else if (thresholds.upperWarning && individualResult.value >= thresholds.upperWarning) {
       score /= 2;
       violations.push({
         metadata,
-        value,
-        key: result.key,
+        value: individualResult.value,
+        key: individualResult.key,
         breach: 'upperWarning',
         threshold: thresholds.upperWarning,
       });
     }
 
+    if(this.individualResults) {
+      if(thresholds.lowerSevere) individualResult.lowerSevere = thresholds.lowerSevere;
+      if(thresholds.lowerWarning) individualResult.lowerWarning = thresholds.lowerWarning;
+      if(thresholds.upperSevere) individualResult.upperSevere = thresholds.upperSevere;
+      if(thresholds.upperWarning) individualResult.upperWarning = thresholds.upperWarning;
+
+      return {score, violations, individualResult};
+    }
+
     return {
       score,
-      violations,
+      violations
     };
   }
 
@@ -87,17 +113,29 @@ export class Grader implements pitometer.IGrader {
     metricScore,
     ignoreEmpty,
     metadata,
-  }): pitometer.IGradingResult {
+  }, compareResult): pitometer.IGradingResult {
     const grades = [];
     const violations = [];
+    const individualResults = []
 
     results.forEach((result: pitometer.ISourceResult) => {
+
+      // lets see if we have an individual compare result for that source key
+      var individualResult:pitometer.IIndividualGradingResult = null;
+      if(compareResult && compareResult.individualResults) {
+        for(var i=0;i<compareResult.individualResults.length;i++) {
+          if(compareResult.individualResults[i].key == result.key)
+            individualResult = compareResult.individualResults[i];
+            break;
+        }
+      }
+
       const grade = this.evaluate(result, {
         thresholds,
         metricScore,
         ignoreEmpty,
         metadata,
-      });
+      }, individualResult);
       violations.push(...grade.violations);
       grades.push({
         id,
@@ -106,6 +144,8 @@ export class Grader implements pitometer.IGrader {
         score: grade.score,
         violations: grade.violations,
       });
+      if(this.individualResults)
+        individualResults.push(grade.individualResult);
     });
 
     const reduced = grades.reduce((acc, elm) => {
@@ -125,6 +165,9 @@ export class Grader implements pitometer.IGrader {
       });
     }
 
-    return { id, violations, score };
+    if(this.individualResults)
+      return { id, violations, score, individualResults };
+
+    return { id, violations, score};
   }
 }
